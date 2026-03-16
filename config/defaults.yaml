@@ -1,0 +1,36 @@
+geometry:
+  bounding_box_margin: 50
+  minimal_leftover_thickness: 0.3
+
+machining:
+  machine_hour_rate: 75
+  roughing_factor: 0.6
+  finishing_factor: 0.3
+
+material:
+  waste_factor: 1.10
+
+blocks:
+  block_length: 1500
+  block_width: 500
+
+
+  available_thickness:
+    - 25
+    - 50
+    - 75
+    - 100
+    - 150
+
+
+block_cost:
+  available_materials:
+    - WB0351
+    - WB0650
+    - WB0750
+  WB0351: 50
+  WB0650: 100
+  WB0750: 120
+
+
+
