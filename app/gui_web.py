@@ -1,3 +1,6 @@
+# {} is dict
+# [] is list (simple array)
+
 import sys
 import os
 import pandas as pd
@@ -9,195 +12,236 @@ from components.component import Component
 from engine.estimator_engine import EstimatorEngine
 from config.config_loader import load_config
 
-config = load_config()
-engine = EstimatorEngine(config)
+# -----------------------------
+# CONFIG & ENGINE
+# -----------------------------
 
+config_default = load_config()
+tooling_config  = load_config("config/tooling_boards.yaml")
+
+engine = EstimatorEngine(config_default, tooling_config)
+
+st.set_page_config(layout="wide")
 st.title("Composite Tooling Cost Estimator")
 
 # -----------------------------
-# Parameter control panel for the configs
+# HELPERS
+# -----------------------------
+
+def flatten_dict(d, parent_key=()):
+    items = []
+    for k, v in d.items():
+        new_key = parent_key + (k,)
+        if isinstance(v, dict):
+            items.extend(flatten_dict(v, new_key).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
+
+# -----------------------------
+# PARAMETER PANEL (RIGHT SIDE)
 # -----------------------------
 
 def parameter_control_panel(config):
 
-    st.header("Estimator Parameters")
+    st.header("⚙️ Parameters")
 
-    rows = []
+    search = st.text_input("Search parameter")
 
-    for category, params in config.data.items():
+    for category, content in config.data.items():
 
-        for param, value in params.items():
+        with st.expander(category.capitalize(), expanded=False):
 
-            rows.append({
-                "Category": category,
-                "Parameter": param,
-                "Value": value
-            })
+            flat = flatten_dict(content)
 
-    df = pd.DataFrame(rows)
+            rows = []
+            for key_tuple, value in flat.items():
 
-    edited = st.data_editor(
-        df,
-        use_container_width=True,
-        num_rows="fixed"
-    )
+                param_name = ".".join(key_tuple)
 
-    # Write changes back to config
+                if search and search.lower() not in param_name.lower():
+                    continue
 
-    for _, row in edited.iterrows():
+                rows.append({
+                    "Parameter": param_name,
+                    "Value": value
+                })
 
-        config.set(
-            row["Category"],
-            row["Parameter"],
-            row["Value"]
-        )
+            if not rows:
+                continue
 
-    return config
+            df = pd.DataFrame(rows)
+
+            edited = st.data_editor(
+                df,
+                use_container_width=True,
+                num_rows="fixed",
+                key=f"editor_{category}"
+            )
+
+            for _, row in edited.iterrows():
+                keys = [category] + row["Parameter"].split(".")
+                config.set(*keys, value=row["Value"])
+
 
 # -----------------------------
-# Session State
+# SESSION STATE
 # -----------------------------
 
 if "components_table" not in st.session_state:
-
     st.session_state.components_table = pd.DataFrame(
-        columns=[
-            "Name",
-            "Length (mm)",
-            "Width (mm)",
-            "Height (mm)",
-            "Material"
-        ]
+        columns=["Name", "Length (mm)", "Width (mm)", "Height (mm)", "Material"]
     )
 
-# -----------------------------
-# Component Input
-# -----------------------------
+if "results_df" not in st.session_state:
+    st.session_state.results_df = pd.DataFrame()
 
-st.header("Add Component")
-
-col1, col2, col3, col4, col5 = st.columns(5)
-
-with col1:
-    name = st.text_input("Component name")
-
-with col2:
-    length = st.number_input("Length (mm)", value=1000)
-
-with col3:
-    width = st.number_input("Width (mm)", value=200)
-
-with col4:
-    height = st.number_input("Height (mm)", value=50)
-
-with col5:
-
-    material_names = config.get("block_cost", "available_materials")
-
-    material_choice = st.selectbox(
-        "Tooling Material",
-        material_names
-    )
-
-# Add component
-
-if st.button("Add Component"):
-
-    new_row = pd.DataFrame(
-        [[name, length, width, height, material_choice]],
-        columns=[
-            "Name",
-            "Length (mm)",
-            "Width (mm)",
-            "Height (mm)",
-            "Material"
-        ]
-    )
-
-    st.session_state.components_table = pd.concat(
-        [st.session_state.components_table, new_row],
-        ignore_index=True
-    )
 
 # -----------------------------
-# Component Table
+# MAIN LAYOUT (75 / 25)
 # -----------------------------
 
-st.header("Project Components")
+col_main, col_params = st.columns([3, 1])
 
-edited_table = st.data_editor(
-    st.session_state.components_table,
-    num_rows="dynamic",
-    use_container_width=True
-)
+# =============================
+# LEFT SIDE (MAIN WORKFLOW)
+# =============================
 
-st.session_state.components_table = edited_table
+with col_main:
 
-# -----------------------------
-# Calculate
-# -----------------------------
+    # 🔥 KPI BAR (LIVE COST)
+    if not st.session_state.results_df.empty:
+        total_cost = st.session_state.results_df["Total (€)"].sum()
+        st.metric("Total Project Cost", f"€{total_cost:,.2f}")
+    else:
+        st.metric("Total Project Cost", "€0.00")
 
-if st.button("Calculate Project Cost"):
+    # -----------------------------
+    # TABS
+    # -----------------------------
+    tab1, tab2, tab3 = st.tabs(["📦 Geometry", "💰 Cost", "📊 Results"])
 
-    results = []
+    # =============================
+    # TAB 1 — GEOMETRY
+    # =============================
+    with tab1:
 
-    for _, row in st.session_state.components_table.iterrows():
+        st.subheader("Add Component")
 
-        comp = Component(
-            row["Name"],
-            row["Length (mm)"],
-            row["Width (mm)"],
-            row["Height (mm)"],
-            row["Material"]
+        col1, col2, col3, col4, col5 = st.columns(5)
+
+        with col1:
+            name = st.text_input("Component name")
+
+        with col2:
+            length = st.number_input("Length (mm)", value=2200)
+
+        with col3:
+            width = st.number_input("Width (mm)", value=350)
+
+        with col4:
+            height = st.number_input("Height (mm)", value=80)
+
+        with col5:
+            materials = config_default.get("tooling_blocks", "materials")
+            material_names = [m["name"] for m in materials]
+            material_choice = st.selectbox("Tooling Material", material_names)
+
+        if st.button("Add Component"):
+            new_row = pd.DataFrame(
+                [[name, length, width, height, material_choice]],
+                columns=["Name", "Length (mm)", "Width (mm)", "Height (mm)", "Material"]
+            )
+
+            st.session_state.components_table = pd.concat(
+                [st.session_state.components_table, new_row],
+                ignore_index=True
+            )
+
+        st.subheader("Project Components")
+
+        edited_table = st.data_editor(
+            st.session_state.components_table,
+            num_rows="dynamic",
+            use_container_width=True
         )
 
-        result = engine.process_component(comp)
+        st.session_state.components_table = edited_table
 
-        results.append({
+    # =============================
+    # TAB 2 — COST
+    # =============================
+    with tab2:
 
-            "Component": row["Name"],
-            "Material Cost (€)": result["material_cost"],
-            "Milling Cost (€)": result["milling_cost"],
-            "Postprocess Cost (€)": result["postprocess_cost"],
-            "Total (€)": result["total_cost"],
-            "Block stack": str(result["block_stack"]),
-            "Blocks used": result["blocks_used"]
+        st.subheader("Run Cost Calculation")
 
-        })
+        if st.button("Calculate Project Cost"):
 
-    results_df = pd.DataFrame(results)
+            results = []
 
-    st.header("Cost Results")
+            for _, row in st.session_state.components_table.iterrows():
 
-    st.dataframe(results_df, use_container_width=True)
+                comp = Component(
+                    row["Name"],
+                    row["Length (mm)"],
+                    row["Width (mm)"],
+                    row["Height (mm)"],
+                    row["Material"]
+                )
 
-    total_project_cost = results_df["Total (€)"].sum()
+                result = engine.process_component(comp)
 
-    st.subheader(f"Total Project Cost: €{total_project_cost:,.2f}")
+                results.append({
+                    "Component": row["Name"],
+                    "Material Cost (€)": result["material_cost"],
+                    "Milling Cost (€)": result["milling_cost"],
+                    "Postprocess Cost (€)": result["postprocess_cost"],
+                    "Total (€)": result["total_cost"],
+                    "Blocks used": result["blocks_used"]
+                })
 
-    st.subheader("Remaining Stock Pieces")
+            st.session_state.results_df = pd.DataFrame(results)
 
-    st.write(engine.block_optimizer.leftover_lengths)
+        if not st.session_state.results_df.empty:
+            st.dataframe(st.session_state.results_df, use_container_width=True)
 
-# -----------------------------
-# Reset
-# -----------------------------
+    # =============================
+    # TAB 3 — RESULTS
+    # =============================
+    with tab3:
 
-st.divider()
+        if not st.session_state.results_df.empty:
 
-if st.button("Start New Project"):
+            st.subheader("Detailed Results")
 
-    st.session_state.components_table = pd.DataFrame(
-        columns=[
-            "Name",
-            "Length (mm)",
-            "Width (mm)",
-            "Height (mm)",
-            "Material"
-        ]
-    )
+            st.dataframe(st.session_state.results_df, use_container_width=True)
 
-    st.rerun()
+            total_project_cost = st.session_state.results_df["Total (€)"].sum()
+            st.subheader(f"Total: €{total_project_cost:,.2f}")
+
+            st.subheader("Remaining Stock")
+            st.write(engine.block_optimizer.leftover_lengths)
+
+        else:
+            st.info("Run a calculation first.")
+
+    # -----------------------------
+    # RESET
+    # -----------------------------
+    st.divider()
+
+    if st.button("Start New Project"):
+        st.session_state.components_table = pd.DataFrame(
+            columns=["Name", "Length (mm)", "Width (mm)", "Height (mm)", "Material"]
+        )
+        st.session_state.results_df = pd.DataFrame()
+        st.rerun()
 
 
-config = parameter_control_panel(config)
+# =============================
+# RIGHT SIDE (CONTROL PANEL)
+# =============================
+
+with col_params:
+    parameter_control_panel(config_default)

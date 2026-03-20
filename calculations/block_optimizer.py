@@ -2,8 +2,8 @@ class BlockOptimizer:
 
     def __init__(self, config):
 
-        self.block_length = config.get("blocks", "block_length")
-        self.block_width = config.get("blocks", "block_width")
+        self.block_length = config.get("tooling_blocks", "standard_block", "length_mm")
+        self.block_width = config.get("tooling_blocks", "standard_block", "width_mm")
 
         # leftover pieces from previous cuts
         self.leftover_lengths = []

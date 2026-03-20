@@ -1,36 +1,87 @@
+general:
+    currency: EUR
+    margin_percentage: 0.15
+    scrap_rate_material: 0.08
+    scrap_rate_tooling: 0.05
+
+labor_rates:
+  engineering_hourly_rate: 95.0
+  management_hourly_rate: 110.0
+  operator_hourly_rate: 45.0
+
+machine_rates:
+  machine_hourly_rate: 35.0
+  cnc_milling_rate: 60.0
+  machine_setup_time_hours: 1.5
+
+materials:
+  composite_material:
+    price_per_kg: 150.0
+    density_kg_per_m3: 1600
+    waste_factor: 0.1
+
+  core_material:
+    price_per_kg: 80.0
+    density_kg_per_m3: 80
+
+  consumables:
+    peel_ply_per_m2: 3.5
+    vacuum_bag_per_m2: 6.0
+    sealant_tape_per_m: 1.2
+    release_agent_per_m2: 0.8
+
+tooling_blocks:
+  supplier: "RAMPF Raku Tool"
+
+  materials:
+    - name: "RAKU TOOL WB-0700"
+      density_kg_per_m3: 700
+      price_per_m3: 1800
+      machine_removal_rate: 0.005
+
+    - name: "RAKU TOOL WB-0900"
+      density_kg_per_m3: 900
+      price_per_m3: 2200
+      machine_removal_rate: 0.004
+
+  standard_block:
+    length_mm: 1500
+    width_mm: 500
+    thickness_options_mm: [25, 50, 75, 100, 150]
+
+  machining:
+    milling_rate_per_hour: 60.0
+    tool_wear_cost_per_hour: 8.0
+    machining_efficiency: 0.85
+
+  constraints:
+    bounding_box_margin_mm: 10
+    minimal_leftover_thickness_mm: 5
+
 geometry:
-  bounding_box_margin: 50
-  minimal_leftover_thickness: 0.3
+  bounding_box_margin_mm: 10
+  minimal_leftover_thickness_mm: 5
+  scaling_factor: 1.02
 
-machining:
-  machine_hour_rate: 75
-  roughing_factor: 0.6
-  finishing_factor: 0.3
+production:
+  batch_size: 1
+  setup_time_hours: 2.0
+  cycle_time_hours: 5.0
 
-material:
-  waste_factor: 1.10
+quality:
+  inspection_time_hours: 1.5
+  rejection_rate: 0.03
 
-blocks:
-  block_length: 1500
-  block_width: 500
+logistics:
+  packaging_cost: 50.0
+  shipping_cost_estimate: 150.0
 
+overhead:
+  facility_overhead_percentage: 0.12
+  energy_cost_per_kwh: 0.25
+  average_machine_power_kw: 5.0
 
-  available_thickness:
-    - 25
-    - 50
-    - 75
-    - 100
-    - 150
-
-
-block_cost:
-  available_materials:
-    - WB0351
-    - WB0650
-    - WB0750
-  WB0351: 50
-  WB0650: 100
-  WB0750: 120
-
-
-
+advanced:
+  learning_curve_factor: 0.9
+  automation_factor: 0.75
+  risk_contingency_percentage: 0.1

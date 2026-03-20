@@ -1,0 +1,121 @@
+raku_tool_tooling_boards:
+
+  WB-0691:
+    material: epoxy tooling board
+    density_g_cm3: 0.69
+    density_kg_m3: 690
+    average_price_eur_per_m3: 3200
+    color: blue
+    heat_deflection_temperature_c: 100
+    glass_transition_temperature_c: 110
+    shore_hardness_D: "70-75"
+    compressive_strength_mpa: "50-60"
+    flexural_strength_mpa: "25-35"
+    coefficient_thermal_expansion_um_mK: "35-45"
+    key_properties:
+      - very fine surface structure
+      - excellent CNC machinability
+      - good dimensional stability
+      - compatible with epoxy prepregs and release agents
+    typical_applications:
+      - low temperature prepreg layup tools
+      - vacuum forming molds
+      - composite prototype tooling
+    typical_board_sizes_mm:
+      - "1500x500x50"
+      - "1500x500x75"
+      - "1500x500x100"
+      - "1500x500x150"
+      - "1500x500x200"
+
+  WB-0700:
+    material: epoxy tooling board
+    density_g_cm3: 0.70
+    density_kg_m3: 700
+    average_price_eur_per_m3: 3500
+    color: light green
+    heat_deflection_temperature_c: 130
+    glass_transition_temperature_c: 135
+    shore_hardness_D: "70-75"
+    compressive_strength_mpa: "60-70"
+    flexural_strength_mpa: "40-50"
+    coefficient_thermal_expansion_um_mK: "35-45"
+    key_properties:
+      - very fine surface
+      - excellent milling characteristics
+      - high dimensional stability
+      - good temperature resistance
+    typical_applications:
+      - prepreg lay-up tools
+      - thermoforming molds
+      - vacuum forming molds
+    machining_notes:
+      - produces clean chips
+      - low tool wear
+      - suitable for high-speed CNC machining
+
+  WB-0801:
+    material: polyurethane tooling board
+    density_g_cm3: 0.80
+    density_kg_m3: 800
+    average_price_eur_per_m3: 4000
+    color: gray
+    heat_deflection_temperature_c: 85
+    shore_hardness_D: "65-70"
+    compressive_strength_mpa: "40-45"
+    flexural_strength_mpa: "35-40"
+    coefficient_thermal_expansion_um_mK: "45-50"
+    key_properties:
+      - fine surface structure
+      - low thermal expansion
+      - good dimensional stability
+      - good compressive and flexural strength
+    typical_applications:
+      - master models
+      - cubing models
+      - vacuum forming tools
+      - composite mold masters
+
+  WB-0890:
+    material: epoxy tooling board
+    density_g_cm3: 0.89
+    density_kg_m3: 890
+    average_price_eur_per_m3: 4800
+    color: dark blue
+    heat_deflection_temperature_c: 110
+    glass_transition_temperature_c: 110
+    shore_hardness_D: "75-80"
+    compressive_strength_mpa: "60-70"
+    flexural_strength_mpa: "40-50"
+    tensile_strength_mpa: "20-30"
+    coefficient_thermal_expansion_um_mK: "35-45"
+    key_properties:
+      - extremely fine surface finish
+      - excellent machinability
+      - compatible with prepregs and release agents
+      - high dimensional stability
+    typical_applications:
+      - composite lay-up tools
+      - vacuum forming molds
+      - medium temperature tooling
+
+  WB-1000:
+    material: polyurethane tooling board
+    density_g_cm3: 1.00
+    density_kg_m3: 1000
+    average_price_eur_per_m3: 5200
+    color: beige
+    heat_deflection_temperature_c: 75
+    shore_hardness_D: "75-85"
+    compressive_strength_mpa: "45-50"
+    flexural_strength_mpa: "50-55"
+    coefficient_thermal_expansion_um_mK: "50-55"
+    key_properties:
+      - high edge strength
+      - good abrasion resistance
+      - easy CNC machining
+      - good dimensional stability
+    typical_applications:
+      - jigs and fixtures
+      - foundry patterns
+      - checking fixtures

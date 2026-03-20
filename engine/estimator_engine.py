@@ -3,26 +3,44 @@ from calculations.milling_cost import calculate_milling_cost
 from calculations.postprocess_cost import calculate_postprocess_cost
 from calculations.block_optimizer import BlockOptimizer
 from calculations.block_optimizer import calculate_block_stack
+from calculations.tooling_stack import ToolingStack
 
 
 class EstimatorEngine:
 
-    def __init__(self, config):
+    def __init__(self, config_default, config_tooling):
 
-        self.config = config
-        self.block_optimizer = BlockOptimizer(config)
+        self.config_default = config_default
+        self.config_tooling = config_tooling
+        self.block_optimizer = BlockOptimizer(config_default)
+
+        # board_names = list(self.config_tooling.data["raku_tool_tooling_boards"].keys())
+        #
+        # print(board_names)
 
 
     def process_component(self, component):
 
-        material = calculate_material_cost(component, self.config)
+        # Using the Tooling_stack module
+        stacker = ToolingStack(self.config_default.get("tooling_blocks","standard_block", "thickness_options_mm"))
 
-        milling = calculate_milling_cost(component, self.config)
+        result = stacker.calculate_stack(
+            product_x=component.length,
+            product_y=component.width,
+            product_z=component.height
+        )
 
-        post = calculate_postprocess_cost(component, self.config)
+        print("Component.material: " + component.material)
 
-        thickness_options = self.config.get(
-            "blocks", "available_thickness"
+
+        material = calculate_material_cost(component, self.config_default)
+
+        milling = calculate_milling_cost(component, self.config_default)
+
+        post = calculate_postprocess_cost(component, self.config_default)
+
+        thickness_options = self.config_default.get(
+            "tooling_blocks", "standard_block", "thickness_options_mm"
         )
 
         stack = calculate_block_stack(
