@@ -44,6 +44,36 @@ tooling_blocks:
       price_per_m3: 2200
       machine_removal_rate: 0.004
 
+    - name: "RAKU TOOL WB-1100"
+      density_kg_per_m3: 1100
+      price_per_m3: 2600
+      machine_removal_rate: 0.0035
+
+    - name: "RAKU TOOL WB-1222"
+      density_kg_per_m3: 1200
+      price_per_m3: 3000
+      machine_removal_rate: 0.0032
+
+    - name: "RAKU TOOL WB-1404"
+      density_kg_per_m3: 1400
+      price_per_m3: 3600
+      machine_removal_rate: 0.0028
+
+    - name: "RAKU TOOL WB-1604"
+      density_kg_per_m3: 1600
+      price_per_m3: 4200
+      machine_removal_rate: 0.0025
+
+    - name: "RAKU TOOL WB-1804"
+      density_kg_per_m3: 1800
+      price_per_m3: 4800
+      machine_removal_rate: 0.0022
+
+    - name: "RAKU TOOL WB-2004"
+      density_kg_per_m3: 2000
+      price_per_m3: 5500
+      machine_removal_rate: 0.0020
+
   standard_block:
     length_mm: 1500
     width_mm: 500
@@ -55,8 +85,8 @@ tooling_blocks:
     machining_efficiency: 0.85
 
   constraints:
-    bounding_box_margin_mm: 10
-    minimal_leftover_thickness_mm: 5
+    bounding_box_margin_mm: 100
+    minimal_leftover_thickness_mm: 0.33
 
 geometry:
   bounding_box_margin_mm: 10

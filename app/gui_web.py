@@ -16,7 +16,7 @@ from config.config_loader import load_config
 # CONFIG & ENGINE
 # -----------------------------
 
-config_default = load_config()
+config_default = load_config("config/defaults.yaml")
 tooling_config  = load_config("config/tooling_boards.yaml")
 
 engine = EstimatorEngine(config_default, tooling_config)
@@ -28,6 +28,7 @@ st.title("Composite Tooling Cost Estimator")
 # HELPERS
 # -----------------------------
 
+# Helper for the parameter panel
 def flatten_dict(d, parent_key=()):
     items = []
     for k, v in d.items():
@@ -194,11 +195,12 @@ with col_main:
 
                 results.append({
                     "Component": row["Name"],
-                    "Material Cost (€)": result["material_cost"],
-                    "Milling Cost (€)": result["milling_cost"],
-                    "Postprocess Cost (€)": result["postprocess_cost"],
-                    "Total (€)": result["total_cost"],
-                    "Blocks used": result["blocks_used"]
+                    "Block volume": result.stacker_result.volume_m3,
+                    "Material Cost (€)": result.material_cost,
+                    "Milling Cost (€)": result.milling_cost,
+                    # "Postprocess Cost (€)": result["postprocess_cost"],
+                    "Total (€)": result.material_cost + result.milling_cost,
+                    # "Blocks used": result["blocks_used"]
                 })
 
             st.session_state.results_df = pd.DataFrame(results)
@@ -221,7 +223,7 @@ with col_main:
             st.subheader(f"Total: €{total_project_cost:,.2f}")
 
             st.subheader("Remaining Stock")
-            st.write(engine.block_optimizer.leftover_lengths)
+            # st.write(engine.block_optimizer.leftover_lengths)
 
         else:
             st.info("Run a calculation first.")
