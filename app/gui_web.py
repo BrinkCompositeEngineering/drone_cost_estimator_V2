@@ -11,6 +11,9 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from components.component import Component
 from engine.estimator_engine import EstimatorEngine
 from config.config_loader import load_config
+from reporting.report_generator import ReportGenerator
+from reporting.pdf_report import PDFReport
+import tempfile
 
 # -----------------------------
 # CONFIG & ENGINE
@@ -23,6 +26,8 @@ engine = EstimatorEngine(config_default, tooling_config)
 
 st.set_page_config(layout="wide")
 st.title("Composite Tooling Cost Estimator")
+
+
 
 # -----------------------------
 # HELPERS
@@ -86,6 +91,33 @@ def parameter_control_panel(config):
                 config.set(*keys, value=row["Value"])
 
 
+def process_components_table():
+    results = []
+
+    for _, row in st.session_state.components_table.iterrows():
+        comp = Component(
+            row["Name"],
+            row["Length (mm)"],
+            row["Width (mm)"],
+            row["Height (mm)"],
+            row["Material"]
+        )
+
+        result = engine.process_component(comp)
+
+        results.append({
+            "Component": row["Name"],
+            "Block volume": result.stacker_result.volume_m3,
+            "Material Cost (€)": result.material_cost,
+            "Milling Cost (€)": result.milling_cost,
+            # "Postprocess Cost (€)": result["postprocess_cost"],
+            "Total (€)": result.material_cost + result.milling_cost,
+            # "Blocks used": result["blocks_used"]
+        })
+
+    st.session_state.results_df = pd.DataFrame(results)
+    st.rerun()
+
 # -----------------------------
 # SESSION STATE
 # -----------------------------
@@ -97,6 +129,13 @@ if "components_table" not in st.session_state:
 
 if "results_df" not in st.session_state:
     st.session_state.results_df = pd.DataFrame()
+
+# 🔥 KPI BAR (LIVE COST)
+if not st.session_state.results_df.empty:
+    total_cost = st.session_state.results_df["Total (€)"].sum()
+    st.metric("Total Project Cost", f"€{total_cost:,.2f}")
+else:
+    st.metric("Total Project Cost", "€0.00")
 
 
 # -----------------------------
@@ -111,17 +150,15 @@ col_main, col_params = st.columns([3, 1])
 
 with col_main:
 
-    # 🔥 KPI BAR (LIVE COST)
-    if not st.session_state.results_df.empty:
-        total_cost = st.session_state.results_df["Total (€)"].sum()
-        st.metric("Total Project Cost", f"€{total_cost:,.2f}")
-    else:
-        st.metric("Total Project Cost", "€0.00")
+
+
 
     # -----------------------------
     # TABS
     # -----------------------------
     tab1, tab2, tab3 = st.tabs(["📦 Geometry", "💰 Cost", "📊 Results"])
+
+
 
     # =============================
     # TAB 1 — GEOMETRY
@@ -160,6 +197,9 @@ with col_main:
                 ignore_index=True
             )
 
+            process_components_table()
+
+
         st.subheader("Project Components")
 
         edited_table = st.data_editor(
@@ -169,6 +209,9 @@ with col_main:
         )
 
         st.session_state.components_table = edited_table
+        if st.button("update table"):
+            st.rerun()
+
 
     # =============================
     # TAB 2 — COST
@@ -179,10 +222,35 @@ with col_main:
 
         if st.button("Calculate Project Cost"):
 
-            results = []
+            process_components_table()
+
+        if not st.session_state.results_df.empty:
+            st.dataframe(st.session_state.results_df, use_container_width=True)
+
+
+    # =============================
+    # TAB 3 — RESULTS
+    # =============================
+    with tab3:
+
+        st.subheader("📊 Project Report")
+
+        # -----------------------------
+        # ACTION BUTTONS
+        # -----------------------------
+        col1, col2 = st.columns([1, 1])
+
+        with col1:
+            generate_report = st.button("⚙️ Generate Report")
+
+        # -----------------------------
+        # GENERATE REPORT
+        # -----------------------------
+        if generate_report:
+
+            components = []
 
             for _, row in st.session_state.components_table.iterrows():
-
                 comp = Component(
                     row["Name"],
                     row["Length (mm)"],
@@ -191,42 +259,87 @@ with col_main:
                     row["Material"]
                 )
 
-                result = engine.process_component(comp)
+                comp = engine.process_component(comp)
+                components.append(comp)
 
-                results.append({
-                    "Component": row["Name"],
-                    "Block volume": result.stacker_result.volume_m3,
-                    "Material Cost (€)": result.material_cost,
-                    "Milling Cost (€)": result.milling_cost,
-                    # "Postprocess Cost (€)": result["postprocess_cost"],
-                    "Total (€)": result.material_cost + result.milling_cost,
-                    # "Blocks used": result["blocks_used"]
-                })
+            report = ReportGenerator(components)
 
-            st.session_state.results_df = pd.DataFrame(results)
+            st.session_state.report_summary = report.generate_summary()
+            st.session_state.results_df = pd.DataFrame(
+                report.generate_component_table()
+            )
 
+            # Reset PDF when new report is generated
+            st.session_state.pdf_bytes = None
+
+        # -----------------------------
+        # KPI SECTION
+        # -----------------------------
+        if "report_summary" in st.session_state:
+            summary = st.session_state.report_summary
+
+            col1, col2, col3 = st.columns(3)
+
+            col1.metric("💰 Total Cost", f"€{summary['total_cost']:,.2f}")
+            col2.metric("📦 Volume", f"{summary['total_volume']:.3f} m³")
+            col3.metric("🧱 Boards", summary["total_boards"])
+
+        # -----------------------------
+        # PDF GENERATION
+        # -----------------------------
+        pdf_ready = st.session_state.get("pdf_bytes") is not None
+
+        col1, col2 = st.columns([1, 1])
+
+        with col1:
+            if st.button("📄 Generate PDF", disabled="report_summary" not in st.session_state):
+                import io
+
+                buffer = io.BytesIO()
+
+                pdf = PDFReport(buffer)
+                pdf.generate(
+                    st.session_state.report_summary,
+                    st.session_state.results_df
+                )
+
+                st.session_state.pdf_bytes = buffer.getvalue()
+
+        with col2:
+            if st.session_state.get("pdf_bytes"):
+
+                st.download_button(
+                    label="⬇️ Download PDF",
+                    data=st.session_state.pdf_bytes,
+                    file_name="tooling_report.pdf",
+                    mime="application/pdf"
+                )
+            else:
+                st.button("⬇️ Download PDF", disabled=True)
+
+        # -----------------------------
+        # RESULTS TABLE
+        # -----------------------------
         if not st.session_state.results_df.empty:
-            st.dataframe(st.session_state.results_df, use_container_width=True)
 
-    # =============================
-    # TAB 3 — RESULTS
-    # =============================
-    with tab3:
+            st.divider()
+            st.subheader("📋 Component Breakdown")
 
-        if not st.session_state.results_df.empty:
-
-            st.subheader("Detailed Results")
-
-            st.dataframe(st.session_state.results_df, use_container_width=True)
+            st.dataframe(
+                st.session_state.results_df,
+                use_container_width=True
+            )
 
             total_project_cost = st.session_state.results_df["Total (€)"].sum()
-            st.subheader(f"Total: €{total_project_cost:,.2f}")
 
-            st.subheader("Remaining Stock")
+            st.markdown(f"### 💰 Total Project Cost: €{total_project_cost:,.2f}")
+
+            st.subheader("♻️ Remaining Stock")
             # st.write(engine.block_optimizer.leftover_lengths)
 
         else:
-            st.info("Run a calculation first.")
+            st.info("Generate a report to see results.")
+
 
     # -----------------------------
     # RESET

@@ -28,6 +28,7 @@ class EstimatorEngine:
         component.stacker_result = stackerResult
         component.material_cost = materialcost
         component.milling_cost = millingcost
+        component.total_cost = materialcost + millingcost
 
 
 
